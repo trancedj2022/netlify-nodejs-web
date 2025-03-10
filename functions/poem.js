@@ -1,4 +1,4 @@
-exports.handler = async function(event, context) {
+exports.handler = function(_event, _context) {
   const poem = {
     title: '将进酒',
     author: '李白',

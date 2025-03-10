@@ -1,11 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // 背景图片数组
+  // 背景图片数组 - 修改为更契合《将进酒》意境的图片
   const backgrounds = [
-    'https://source.unsplash.com/random/1920x1080/?chinese,landscape',
-    'https://source.unsplash.com/random/1920x1080/?mountains,river',
-    'https://source.unsplash.com/random/1920x1080/?ancient,china',
-    'https://source.unsplash.com/random/1920x1080/?ink,painting',
-    'https://source.unsplash.com/random/1920x1080/?bamboo,forest'
+    'https://source.unsplash.com/random/1920x1080/?ancient,wine,feast', // 古代酒宴
+    'https://source.unsplash.com/random/1920x1080/?yellow,river,mountains', // 黄河山水
+    'https://source.unsplash.com/random/1920x1080/?chinese,calligraphy,poetry', // 中国书法诗词
+    'https://source.unsplash.com/random/1920x1080/?moonlight,wine,cup', // 明月与酒杯
+    'https://source.unsplash.com/random/1920x1080/?ancient,chinese,scholar' // 古代文人
   ];
 
   // 随机选择背景

@@ -1,5 +1,6 @@
-const express = require('express');
-const path = require('path');
+import express from "npm:express";
+const path = require('node:path');
+import process from "node:process";
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -7,7 +8,7 @@ const port = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname, 'public')));
 
 // API 端点，返回《将进酒》
-app.get('/api/poem', (req, res) => {
+app.get('/api/poem', (_req, res) => {
   const poem = {
     title: '将进酒',
     author: '李白',
@@ -32,7 +33,7 @@ app.get('/api/poem', (req, res) => {
 });
 
 // 主页路由
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
