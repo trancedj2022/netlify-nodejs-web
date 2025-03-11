@@ -1,14 +1,13 @@
-import express from "npm:express";
-const path = require('node:path');
-import process from "node:process";
+const express = require('express');
+const path = require('path');
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.ARGO_PORT || process.env.PORT || 3000;
 
 // 提供静态文件
 app.use(express.static(path.join(__dirname, 'public')));
 
 // API 端点，返回《将进酒》
-app.get('/api/poem', (_req, res) => {
+app.get('/api/poem', (req, res) => {
   const poem = {
     title: '将进酒',
     author: '李白',
@@ -33,10 +32,39 @@ app.get('/api/poem', (_req, res) => {
 });
 
 // 主页路由
-app.get('/', (_req, res) => {
+app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// 启动服务器
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`服务器运行在端口 ${port}`);
+  
+  // 如果设置了 ARGO_AUTH 环境变量，启动 Cloudflare 隧道
+  if (process.env.ARGO_AUTH) {
+    try {
+      // 创建 cloudflare 目录（如果不存在）
+      const cloudflareDir = path.join(__dirname, 'cloudflare');
+      if (!require('fs').existsSync(cloudflareDir)) {
+        require('fs').mkdirSync(cloudflareDir, { recursive: true });
+      }
+      
+      // 启动 Cloudflare 隧道
+      const { startTunnel } = require('./cloudflare/tunnel');
+      startTunnel().then(tunnel => {
+        if (tunnel) {
+          console.log(`Cloudflare 隧道已启动，域名: ${process.env.ARGO_DOMAIN || 'my-poetry-app'}`);
+          
+          // 优雅关闭
+          process.on('SIGINT', () => {
+            console.log('正在关闭 Cloudflare 隧道...');
+            tunnel.kill();
+            process.exit(0);
+          });
+        }
+      });
+    } catch (error) {
+      console.error('启动 Cloudflare 隧道时出错:', error);
+    }
+  }
 });
