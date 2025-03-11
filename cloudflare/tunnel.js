@@ -2,10 +2,20 @@ const { spawn } = require('child_process');
 const path = require('path');
 const config = require('./config');
 const fs = require('fs');
+const { installCloudflared } = require('./install');
 
 // 检查是否安装了 cloudflared
-function checkCloudflared() {
+async function checkCloudflared() {
   try {
+    const binPath = path.join(__dirname, '..', 'bin', 'cloudflared.exe');
+    
+    // 首先检查本地bin目录
+    if (fs.existsSync(binPath)) {
+      process.env.PATH = `${path.join(__dirname, '..', 'bin')};${process.env.PATH}`;
+      return true;
+    }
+    
+    // 然后检查全局安装
     const result = spawn('cloudflared', ['--version'], { shell: true });
     return new Promise((resolve) => {
       result.on('close', (code) => {
@@ -19,10 +29,15 @@ function checkCloudflared() {
 
 // 启动 Cloudflare 隧道
 async function startTunnel() {
-  const isInstalled = await checkCloudflared();
+  let isInstalled = await checkCloudflared();
   
   if (!isInstalled) {
-    console.error('未找到 cloudflared。请先安装 Cloudflare Tunnel CLI: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/');
+    console.log('未找到 cloudflared，尝试安装...');
+    isInstalled = await installCloudflared();
+  }
+  
+  if (!isInstalled) {
+    console.error('cloudflared 安装失败。请运行 npm run install-cloudflared 手动安装，或访问 https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/');
     return;
   }
   
