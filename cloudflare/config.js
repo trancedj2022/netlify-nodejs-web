@@ -6,41 +6,55 @@ const cloudflareConfig = {
   // 从环境变量获取隧道域名和认证信息
   argoDomain: process.env.ARGO_DOMAIN || 'my-poetry-app',
   argoAuth: process.env.ARGO_AUTH || '',
-  // 添加端口配置
   argoPort: process.env.ARGO_PORT || 3000,
-  
-  // 隧道配置
-  tunnelConfig: {
-    'tunnel-name': process.env.ARGO_DOMAIN || 'my-poetry-app',
-    'credentials-file': path.join(__dirname, 'credentials.json'),
-    'url': `http://localhost:${process.env.ARGO_PORT || 3000}`,
-    'logfile': path.join(__dirname, 'cloudflared.log')
-  }
 };
 
 // 如果提供了 ARGO_AUTH 环境变量，创建凭证文件
-if (process.env.ARGO_AUTH) {
+if (cloudflareConfig.argoAuth) {
   try {
+    const credentialsPath = path.join(__dirname, 'credentials.json');
+    
     // 检查是否是 JSON 格式
-    if (process.env.ARGO_AUTH.startsWith('{')) {
-      fs.writeFileSync(
-        path.join(__dirname, 'credentials.json'),
-        process.env.ARGO_AUTH
-      );
+    if (cloudflareConfig.argoAuth.trim().startsWith('{')) {
+      fs.writeFileSync(credentialsPath, cloudflareConfig.argoAuth);
+      console.log('已使用JSON格式创建Cloudflare凭证文件');
     } else {
-      // 假设是 token 格式
-      fs.writeFileSync(
-        path.join(__dirname, 'credentials.json'),
-        JSON.stringify({ 
-          AccountTag: process.env.ARGO_AUTH.split(':')[0],
-          TunnelSecret: process.env.ARGO_AUTH.split(':')[1],
-          TunnelID: process.env.ARGO_DOMAIN
-        })
-      );
+      // 尝试解析token格式
+      try {
+        const parts = cloudflareConfig.argoAuth.split(':');
+        if (parts.length >= 2) {
+          const credentials = {
+            AccountTag: parts[0],
+            TunnelSecret: parts[1],
+            TunnelID: cloudflareConfig.argoDomain
+          };
+          fs.writeFileSync(credentialsPath, JSON.stringify(credentials, null, 2));
+          console.log('已使用Token格式创建Cloudflare凭证文件');
+        } else {
+          // 假设是完整的凭证字符串
+          fs.writeFileSync(credentialsPath, cloudflareConfig.argoAuth);
+          console.log('已使用原始格式创建Cloudflare凭证文件');
+        }
+      } catch (parseError) {
+        console.error('解析ARGO_AUTH时出错:', parseError);
+        // 作为后备，直接写入原始内容
+        fs.writeFileSync(credentialsPath, cloudflareConfig.argoAuth);
+      }
     }
-    console.log('Cloudflare 凭证文件已创建');
+    
+    // 检查文件是否成功创建
+    if (fs.existsSync(credentialsPath)) {
+      const stats = fs.statSync(credentialsPath);
+      if (stats.size > 0) {
+        console.log(`凭证文件已创建，大小: ${stats.size} 字节`);
+      } else {
+        console.error('警告: 凭证文件已创建但为空');
+      }
+    } else {
+      console.error('错误: 凭证文件创建失败');
+    }
   } catch (error) {
-    console.error('创建 Cloudflare 凭证文件时出错:', error);
+    console.error('创建Cloudflare凭证文件时出错:', error);
   }
 }
 

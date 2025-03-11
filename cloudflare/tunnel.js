@@ -32,15 +32,24 @@ async function startTunnel() {
   }
   
   // 构建命令行参数
-  const args = ['tunnel', 'run'];
+  const args = ['tunnel', '--config', path.join(__dirname, 'config.yml'), 'run'];
   
-  // 添加隧道名称或 ID
-  if (config.argoDomain) {
-    args.push(config.argoDomain);
-  }
+  // 创建配置文件
+  const configYml = `
+tunnel: ${config.argoDomain}
+credentials-file: ${path.join(__dirname, 'credentials.json')}
+ingress:
+  - hostname: ${config.argoDomain}.trycloudflare.com
+    service: http://localhost:${config.argoPort}
+  - service: http_status:404
+`;
+
+  fs.writeFileSync(path.join(__dirname, 'config.yml'), configYml);
+  console.log('已创建隧道配置文件');
   
   console.log('正在启动 Cloudflare 隧道...');
   console.log(`隧道名称: ${config.argoDomain}`);
+  console.log(`本地端口: ${config.argoPort}`);
   
   const tunnel = spawn('cloudflared', args, { 
     shell: true,
@@ -48,7 +57,16 @@ async function startTunnel() {
   });
   
   tunnel.stdout.on('data', (data) => {
-    console.log(`[Cloudflare Tunnel] ${data.toString().trim()}`);
+    const output = data.toString().trim();
+    console.log(`[Cloudflare Tunnel] ${output}`);
+    
+    // 检测成功连接的消息
+    if (output.includes('Connection registered')) {
+      console.log('\n========================================');
+      console.log(`隧道已成功建立！您可以通过以下地址访问：`);
+      console.log(`https://${config.argoDomain}.trycloudflare.com`);
+      console.log('========================================\n');
+    }
   });
   
   tunnel.stderr.on('data', (data) => {
@@ -57,6 +75,9 @@ async function startTunnel() {
   
   tunnel.on('close', (code) => {
     console.log(`Cloudflare 隧道已关闭，退出码: ${code}`);
+    if (code !== 0) {
+      console.error('隧道异常关闭，请检查网络连接和认证信息');
+    }
   });
   
   return tunnel;
