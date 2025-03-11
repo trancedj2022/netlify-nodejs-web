@@ -4,7 +4,7 @@ const path = require('path');
 // Cloudflare Tunnels 配置
 const cloudflareConfig = {
   // 从环境变量获取隧道域名和认证信息
-  argoDomain: process.env.ARGO_DOMAIN || 'my-poetry-app',
+  argoDomain: process.env.ARGO_DOMAIN || '',
   argoAuth: process.env.ARGO_AUTH || '',
   argoPort: process.env.ARGO_PORT || 3000,
 };
